@@ -3,3 +3,4 @@ target/
 .scannerwork/
 *.polyglot.*
 .settings/
+.tycho*

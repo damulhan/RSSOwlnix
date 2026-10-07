@@ -7,14 +7,16 @@
       <image path="/org.rssowl.ui/icons/product/about.gif"/>
       <text>
          RSSOwlnix fork of RSSOwl
+         Korean patched by damulhan@gmail.com
 
-Version: 2.10.0-beta
-Build Id: 2025-07-15
+Version: 2.10.1-beta-ko
+Build Id: 2026-10-07
 
 RSSOwlnix and RSSOwl is licensed under the terms of the Eclipse Public License version 1.0.
 http://www.rssowl.org/legal/epl-v10.html
 
 (c) Copyright RSSOwl contributors and others 2005-2011.  All rights reserved.
+(c) Copyright 2026 damulhan@gmail.com - All rights reserved.
       </text>
    </aboutInfo>
 
