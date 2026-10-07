@@ -55,6 +55,7 @@ import org.rssowl.ui.internal.Activator;
 import org.rssowl.ui.internal.Controller;
 import org.rssowl.ui.internal.actions.ReloadTypesAction;
 import org.rssowl.ui.internal.dialogs.LoginDialog;
+import org.eclipse.osgi.util.NLS;
 import org.rssowl.ui.internal.util.JobRunner;
 import org.rssowl.ui.internal.util.ModelUtils;
 
@@ -153,8 +154,13 @@ public class CreateBookmarkWizard extends Wizard implements INewWizard {
 
   void loadNameFromFeed() {
 
+    /* Google News Subscription */
+    if (fFeedDefinitionPage.isGoogleNewsSubscription()) {
+      fBookMarkDefinitionPage.presetBookmarkName(NLS.bind(Messages.FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN, fFeedDefinitionPage.getGoogleNewsKeyword()));
+    }
+
     /* Keyword Subscription - Build from Search Engine */
-    if (fFeedDefinitionPage.isKeywordSubscription()) {
+    else if (fFeedDefinitionPage.isKeywordSubscription()) {
       fBookMarkDefinitionPage.presetBookmarkName(fKeywordPage.getSelectedEngine().getLabel(fFeedDefinitionPage.getKeyword()));
     }
 
@@ -260,9 +266,13 @@ public class CreateBookmarkWizard extends Wizard implements INewWizard {
   public boolean canFinish() {
     IWizardPage currentPage = getContainer().getCurrentPage();
 
+    /* Allow to finish directly from Google News tab */
+    if (currentPage == fFeedDefinitionPage && fFeedDefinitionPage.isGoogleNewsSubscription())
+      return true;
+
     /* Allow to finish directly if link is supplied and title grabbed from feed */
     String link = fFeedDefinitionPage.getLink();
-    if (currentPage == fFeedDefinitionPage && fFeedDefinitionPage.loadTitleFromFeed() && StringUtils.isSet(link) && !URIUtils.HTTP.equals(link))
+    if (currentPage == fFeedDefinitionPage && fFeedDefinitionPage.loadTitleFromFeed() && StringUtils.isSet(link) && !URIUtils.HTTP.equals(link) && !URIUtils.HTTPS.equals(link))
       return true;
 
     /* Allow to finish from Keyword Page */
@@ -302,10 +312,25 @@ public class CreateBookmarkWizard extends Wizard implements INewWizard {
   private boolean internalPerformFinish() throws URISyntaxException {
     final String[] title = new String[] { fBookMarkDefinitionPage.getBookmarkName() };
     final URI[] uriObj = new URI[1];
-    if (fFeedDefinitionPage.isKeywordSubscription())
+    if (fFeedDefinitionPage.isGoogleNewsSubscription())
+      uriObj[0] = new URI(URIUtils.makeGoogleNewsRssUrl(fFeedDefinitionPage.getGoogleNewsKeyword()));
+    else if (fFeedDefinitionPage.isKeywordSubscription())
       uriObj[0] = new URI(fKeywordPage.getSelectedEngine().toUrl(fFeedDefinitionPage.getKeyword()));
     else {
-      String linkVal = URIUtils.ensureProtocol(fFeedDefinitionPage.getLink());
+      String linkVal = fFeedDefinitionPage.getLink();
+      if (linkVal.toLowerCase().startsWith("gnews:")) { //$NON-NLS-1$
+        String kw = linkVal.substring(6).trim();
+        if (!StringUtils.isSet(title[0]))
+          title[0] = NLS.bind(Messages.FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN, kw);
+        linkVal = URIUtils.makeGoogleNewsRssUrl(kw);
+      } else if (linkVal.toLowerCase().startsWith("google:")) { //$NON-NLS-1$
+        String kw = linkVal.substring(7).trim();
+        if (!StringUtils.isSet(title[0]))
+          title[0] = NLS.bind(Messages.FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN, kw);
+        linkVal = URIUtils.makeGoogleNewsRssUrl(kw);
+      } else
+        linkVal = URIUtils.ensureProtocol(linkVal);
+
       if (linkVal.endsWith("/")) //Strip trailing slashes //$NON-NLS-1$
         linkVal = linkVal.substring(0, linkVal.length() - 1);
       uriObj[0] = new URI(URIUtils.fastEncode(linkVal));
@@ -314,8 +339,13 @@ public class CreateBookmarkWizard extends Wizard implements INewWizard {
     /* Need to generate a Title for the new Bookmark */
     if (!StringUtils.isSet(title[0])) {
 
+      /* Google News Title */
+      if (fFeedDefinitionPage.isGoogleNewsSubscription()) {
+        title[0] = NLS.bind(Messages.FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN, fFeedDefinitionPage.getGoogleNewsKeyword());
+      }
+
       /* Load Title from Feed if not provided */
-      if (!fFeedDefinitionPage.isKeywordSubscription()) {
+      else if (!fFeedDefinitionPage.isKeywordSubscription()) {
         IRunnableWithProgress runnable = new IRunnableWithProgress() {
           @Override
           public void run(IProgressMonitor monitor) {

@@ -283,6 +283,23 @@ public class URIUtils {
   }
 
   /**
+   * Constructs a Google News RSS feed search URL for a given keyword.
+   *
+   * @param keyword the keyword to search
+   * @return the Google News RSS URL, or empty string if keyword is empty/null
+   */
+  public static String makeGoogleNewsRssUrl(String keyword) {
+    if (keyword == null)
+      return ""; //$NON-NLS-1$
+
+    String trimmed = keyword.trim();
+    if (trimmed.length() == 0)
+      return ""; //$NON-NLS-1$
+
+    return "https://news.google.com/rss/search?q=" + urlEncode(trimmed).replaceAll("\\+", "%20") + "&hl=ko&gl=KR&ceid=KR:ko"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+  }
+
+  /**
    * Try to create an URI from the given String. The String is preprocessed to
    * work around some bugs in the implementation of Java's equals() for URIs:
    * <p>
@@ -517,8 +534,12 @@ public class URIUtils {
    * http-protocol was appended to the beginning.
    */
   public static String ensureProtocol(String link) {
-    if (link != null && !link.contains(PROTOCOL_IDENTIFIER))
-      return HTTP + link;
+    if (link == null)
+      return null;
+    if (!link.contains(PROTOCOL_IDENTIFIER))
+      return HTTPS + link;
+    if (link.startsWith(HTTP))
+      return HTTPS + link.substring(HTTP.length());
     return link;
   }
 

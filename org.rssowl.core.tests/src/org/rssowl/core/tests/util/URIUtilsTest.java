@@ -251,4 +251,17 @@ public class URIUtilsTest {
     assertEquals("https://foo.de/test/123.html/?help=true&foo=bar", URIUtils.toHTTP("readers://foo.de/test/123.html/?help=true&foo=bar").toString());
   }
 
+  /**
+   * @throws Exception
+   */
+  @Test
+  public void testMakeGoogleNewsRssUrl() throws Exception {
+    assertEquals("", URIUtils.makeGoogleNewsRssUrl(null));
+    assertEquals("", URIUtils.makeGoogleNewsRssUrl(""));
+    assertEquals("", URIUtils.makeGoogleNewsRssUrl("   "));
+    assertEquals("https://news.google.com/rss/search?q=apple&hl=ko&gl=KR&ceid=KR:ko", URIUtils.makeGoogleNewsRssUrl("apple"));
+    assertEquals("https://news.google.com/rss/search?q=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90&hl=ko&gl=KR&ceid=KR:ko", URIUtils.makeGoogleNewsRssUrl("삼성전자"));
+    assertEquals("https://news.google.com/rss/search?q=%EC%9D%B8%EA%B3%B5%20%EC%A7%80%EB%8A%A5&hl=ko&gl=KR&ceid=KR:ko", URIUtils.makeGoogleNewsRssUrl("  인공 지능  "));
+  }
+
 }

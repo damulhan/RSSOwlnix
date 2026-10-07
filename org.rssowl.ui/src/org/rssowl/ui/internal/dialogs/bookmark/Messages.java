@@ -43,6 +43,12 @@ public class Messages extends NLS {
   public static String FeedDefinitionPage_CREATE_KEYWORD_FEED;
   public static String FeedDefinitionPage_IMPORT_WIZARD_TIP;
   public static String FeedDefinitionPage_USE_TITLE_OF_FEED;
+  public static String FeedDefinitionPage_TAB_LINK;
+  public static String FeedDefinitionPage_TAB_GOOGLE_NEWS;
+  public static String FeedDefinitionPage_TAB_KEYWORD;
+  public static String FeedDefinitionPage_GOOGLE_NEWS_KEYWORD;
+  public static String FeedDefinitionPage_GOOGLE_NEWS_URL_PREVIEW;
+  public static String FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN;
   public static String KeywordSubscriptionPage_CREATE_BOOKMARK;
   public static String KeywordSubscriptionPage_N_ON_M;
   public static String KeywordSubscriptionPage_SELECT_SEARCH_ENGINE;

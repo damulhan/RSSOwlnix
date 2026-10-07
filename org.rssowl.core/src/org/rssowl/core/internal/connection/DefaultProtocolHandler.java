@@ -495,7 +495,7 @@ public class DefaultProtocolHandler implements IProtocolHandler {
     else if (url.startsWith(URIUtils.FEEDS))
       return url.replace(URIUtils.FEEDS, URIUtils.HTTPS);
     else if (url.startsWith(URIUtils.FEED))
-      return url.replace(URIUtils.FEED, URIUtils.HTTP);
+      return url.replace(URIUtils.FEED, URIUtils.HTTPS);
     else
       return url;
   }

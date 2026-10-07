@@ -1597,55 +1597,55 @@
             icon="icons/obj16/fav_google.gif"
             id="org.rssowl.ui.GoogleNewsKeywordFeed"
             name="%keywordFeed.name"
-            url="http://news.google.com/news?q=[:]&amp;output=rss&amp;num=25">
+            url="https://news.google.com/rss/search?q=[:]&amp;hl=ko&amp;gl=KR&amp;ceid=KR:ko">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_delicious.gif"
             id="org.rssowl.ui.DeliciousKeywordFeed"
             name="%keywordFeed.name.1"
-            url="http://del.icio.us/rss/tag/[:]">
+            url="https://del.icio.us/rss/tag/[:]">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_live.gif"
             id="org.rssowl.ui.LiveKeywordFeed"
             name="%keywordFeed.name.2"
-            url="http://www.bing.com/search?format=rss&amp;q=[:]">
+            url="https://www.bing.com/search?format=rss&amp;q=[:]">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_digg.gif"
             id="org.rssowl.ui.DiggKeywordFeed"
             name="%keywordFeed.name.3"
-            url="http://digg.com/search/?q=[:]&amp;format=rss">
+            url="https://digg.com/search/?q=[:]&amp;format=rss">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_twitter.gif"
             id="org.rssowl.ui.TwitterKeywordFeed"
             name="%keywordFeed.name.4"
-            url="http://www.queryfeed.net/twitter?q=[:]">
+            url="https://www.queryfeed.net/twitter?q=[:]">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_google.gif"
             id="org.rssowl.ui.GoogleBlogKeywordFeed"
             name="%keywordFeed.name.5"
-            url="http://blogsearch.google.com/blogsearch_feeds?q=[:]&amp;num=25&amp;output=rss">
+            url="https://blogsearch.google.com/blogsearch_feeds?q=[:]&amp;num=25&amp;output=rss">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_youtube.gif"
             id="org.rssowl.ui.YoutubeKeywordFeed"
             name="%keywordFeed.name.6"
-            url="http://gdata.youtube.com/feeds/base/videos?q=[:]">
+            url="https://gdata.youtube.com/feeds/base/videos?q=[:]">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_flickr.gif"
             id="org.rssowl.ui.FlickrKeywordFeed"
             name="%keywordFeed.name.7"
-            url="http://www.flickr.com/services/feeds/photos_public.gne?tags=[:]&amp;format=rss_200">
+            url="https://www.flickr.com/services/feeds/photos_public.gne?tags=[:]&amp;format=rss_200">
       </keywordFeed>
       <keywordFeed
             icon="icons/obj16/fav_vimeo.png"
             id="org.rssowl.ui.VimeoKeywordFeed"
             name="%keywordFeed.name.8"
-            url="http://vimeo.com/tag:[:]/rss">
+            url="https://vimeo.com/tag:[:]/rss">
       </keywordFeed>
    </extension>
    <extension

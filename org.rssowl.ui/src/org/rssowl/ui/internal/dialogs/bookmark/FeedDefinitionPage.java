@@ -46,6 +46,8 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 import org.rssowl.core.Owl;
 import org.rssowl.core.internal.persist.pref.DefaultPreferences;
@@ -74,14 +76,16 @@ import java.util.TreeSet;
  * @author bpasero
  */
 public class FeedDefinitionPage extends WizardPage {
+  private TabFolder fTabFolder;
   private Text fFeedLinkInput;
+  private Text fGoogleNewsKeywordInput;
+  private Text fGoogleNewsUrlPreview;
   private Text fKeywordInput;
   private Button fLoadTitleFromFeedButton;
-  private Button fFeedByLinkButton;
-  private Button fFeedByKeywordButton;
   private String fInitialLink;
   private IPreferenceScope fGlobalScope = Owl.getPreferenceService().getGlobalScope();
   private boolean fIsAutoCompleteKeywordHooked;
+  private boolean fIsAutoCompleteGoogleNewsHooked;
   private Map<String, IBookMark> fExistingFeeds = new HashMap<String, IBookMark>();
 
   /**
@@ -100,11 +104,11 @@ public class FeedDefinitionPage extends WizardPage {
   }
 
   boolean loadTitleFromFeed() {
-    return fLoadTitleFromFeedButton.getSelection();
+    return fTabFolder != null && fTabFolder.getSelectionIndex() == 0 && fLoadTitleFromFeedButton.getSelection();
   }
 
   private String loadInitialLinkFromClipboard() {
-    String initial = URIUtils.HTTP;
+    String initial = URIUtils.HTTPS;
 
     Clipboard cb = new Clipboard(getShell().getDisplay());
     TextTransfer transfer = TextTransfer.getInstance();
@@ -119,20 +123,42 @@ public class FeedDefinitionPage extends WizardPage {
   }
 
   String getLink() {
-    return fFeedByLinkButton.getSelection() ? fFeedLinkInput.getText().trim() : null;
+    if (fTabFolder == null)
+      return null;
+    int idx = fTabFolder.getSelectionIndex();
+    if (idx == 0)
+      return fFeedLinkInput.getText().trim();
+    if (idx == 1)
+      return URIUtils.makeGoogleNewsRssUrl(fGoogleNewsKeywordInput.getText());
+    return null;
   }
 
   void setLink(String link) {
+    if (fTabFolder != null)
+      fTabFolder.setSelection(0);
     fFeedLinkInput.setText(link);
     onLinkChange();
   }
 
   String getKeyword() {
-    return fFeedByKeywordButton.getSelection() ? fKeywordInput.getText() : null;
+    if (fTabFolder == null)
+      return null;
+    int idx = fTabFolder.getSelectionIndex();
+    if (idx == 2)
+      return fKeywordInput.getText();
+    return null;
   }
 
   boolean isKeywordSubscription() {
-    return StringUtils.isSet(getKeyword());
+    return fTabFolder != null && fTabFolder.getSelectionIndex() == 2 && StringUtils.isSet(fKeywordInput.getText());
+  }
+
+  boolean isGoogleNewsSubscription() {
+    return fTabFolder != null && fTabFolder.getSelectionIndex() == 1 && StringUtils.isSet(fGoogleNewsKeywordInput.getText());
+  }
+
+  String getGoogleNewsKeyword() {
+    return fGoogleNewsKeywordInput != null ? fGoogleNewsKeywordInput.getText().trim() : ""; //$NON-NLS-1$
   }
 
   /*
@@ -142,10 +168,15 @@ public class FeedDefinitionPage extends WizardPage {
   public void setVisible(boolean visible) {
     super.setVisible(visible);
 
-    if (visible && !isKeywordSubscription())
-      fFeedLinkInput.setFocus();
-    else if (visible)
-      fKeywordInput.setFocus();
+    if (visible && fTabFolder != null) {
+      int idx = fTabFolder.getSelectionIndex();
+      if (idx == 0)
+        fFeedLinkInput.setFocus();
+      else if (idx == 1)
+        fGoogleNewsKeywordInput.setFocus();
+      else if (idx == 2)
+        fKeywordInput.setFocus();
+    }
   }
 
   /*
@@ -153,13 +184,21 @@ public class FeedDefinitionPage extends WizardPage {
    */
   @Override
   public boolean isPageComplete() {
+    if (fTabFolder == null)
+      return false;
 
-    /* Checked for proper Link */
-    if (fFeedByLinkButton.getSelection())
-      return fFeedLinkInput.getText().length() > 0;
-
-    /* Check for Keyword */
-    return fKeywordInput.getText().length() > 0;
+    int idx = fTabFolder.getSelectionIndex();
+    if (idx == 0) {
+      String link = fFeedLinkInput.getText().trim();
+      return link.length() > 0 && !URIUtils.HTTP.equals(link) && !URIUtils.HTTPS.equals(link);
+    }
+    if (idx == 1) {
+      return fGoogleNewsKeywordInput.getText().trim().length() > 0;
+    }
+    if (idx == 2) {
+      return fKeywordInput.getText().trim().length() > 0;
+    }
+    return false;
   }
 
   /*
@@ -170,35 +209,23 @@ public class FeedDefinitionPage extends WizardPage {
     Composite container = new Composite(parent, SWT.NONE);
     container.setLayout(new GridLayout(1, false));
 
+    fTabFolder = new TabFolder(container, SWT.NONE);
+    fTabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
     /* 1) Feed by Link */
-    if (!StringUtils.isSet(fInitialLink))
-      fInitialLink = loadInitialLinkFromClipboard();
+    TabItem linkTab = new TabItem(fTabFolder, SWT.NONE);
+    linkTab.setText(Messages.FeedDefinitionPage_TAB_LINK);
 
+    Composite linkContainer = new Composite(fTabFolder, SWT.NONE);
+    linkContainer.setLayout(new GridLayout(1, false));
+    linkTab.setControl(linkContainer);
+
+    Label linkLabel = new Label(linkContainer, SWT.NONE);
     boolean loadTitleFromFeed = fGlobalScope.getBoolean(DefaultPreferences.BM_LOAD_TITLE_FROM_FEED);
+    linkLabel.setText(loadTitleFromFeed ? Messages.FeedDefinitionPage_CREATE_FEED : Messages.FeedDefinitionPage_CREATE_FEED_DIRECT);
 
-    fFeedByLinkButton = new Button(container, SWT.RADIO);
-    fFeedByLinkButton.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    fFeedByLinkButton.setText(loadTitleFromFeed ? Messages.FeedDefinitionPage_CREATE_FEED : Messages.FeedDefinitionPage_CREATE_FEED_DIRECT);
-    fFeedByLinkButton.setSelection(true);
-    fFeedByLinkButton.addSelectionListener(new SelectionAdapter() {
-      @Override
-      public void widgetSelected(SelectionEvent e) {
-        fFeedLinkInput.setEnabled(fFeedByLinkButton.getSelection());
-        fLoadTitleFromFeedButton.setEnabled(fFeedByLinkButton.getSelection());
-        fFeedLinkInput.setFocus();
-        getContainer().updateButtons();
-      }
-    });
-
-    Composite textIndent = new Composite(container, SWT.NONE);
-    textIndent.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    textIndent.setLayout(new GridLayout(1, false));
-    ((GridLayout) textIndent.getLayout()).marginLeft = 10;
-    ((GridLayout) textIndent.getLayout()).marginBottom = 10;
-
-    fFeedLinkInput = new Text(textIndent, SWT.BORDER);
+    fFeedLinkInput = new Text(linkContainer, SWT.BORDER);
     fFeedLinkInput.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    OwlUI.makeAccessible(fFeedLinkInput, fFeedByLinkButton);
 
     GC gc = new GC(fFeedLinkInput);
     gc.setFont(JFaceResources.getDialogFont());
@@ -206,16 +233,18 @@ public class FeedDefinitionPage extends WizardPage {
     int entryFieldWidth = Dialog.convertHorizontalDLUsToPixels(fontMetrics, IDialogConstants.ENTRY_FIELD_WIDTH);
     gc.dispose();
 
-    ((GridData) fFeedLinkInput.getLayoutData()).widthHint = entryFieldWidth; //Required to avoid large spanning dialog for long Links
-    fFeedLinkInput.setFocus();
+    ((GridData) fFeedLinkInput.getLayoutData()).widthHint = entryFieldWidth;
 
-    if (StringUtils.isSet(fInitialLink) && !fInitialLink.equals(URIUtils.HTTP)) {
+    if (!StringUtils.isSet(fInitialLink))
+      fInitialLink = loadInitialLinkFromClipboard();
+
+    if (StringUtils.isSet(fInitialLink) && !fInitialLink.equals(URIUtils.HTTP) && !fInitialLink.equals(URIUtils.HTTPS)) {
       fFeedLinkInput.setText(fInitialLink);
       fFeedLinkInput.selectAll();
       onLinkChange();
     } else {
-      fFeedLinkInput.setText(URIUtils.HTTP);
-      fFeedLinkInput.setSelection(URIUtils.HTTP.length());
+      fFeedLinkInput.setText(URIUtils.HTTPS);
+      fFeedLinkInput.setSelection(URIUtils.HTTPS.length());
     }
 
     fFeedLinkInput.addModifyListener(new ModifyListener() {
@@ -226,7 +255,7 @@ public class FeedDefinitionPage extends WizardPage {
       }
     });
 
-    fLoadTitleFromFeedButton = new Button(textIndent, SWT.CHECK);
+    fLoadTitleFromFeedButton = new Button(linkContainer, SWT.CHECK);
     fLoadTitleFromFeedButton.setText(Messages.FeedDefinitionPage_USE_TITLE_OF_FEED);
     fLoadTitleFromFeedButton.setSelection(loadTitleFromFeed);
     fLoadTitleFromFeedButton.addSelectionListener(new SelectionAdapter() {
@@ -236,32 +265,49 @@ public class FeedDefinitionPage extends WizardPage {
       }
     });
 
-    /* 2) Feed by Keyword */
-    fFeedByKeywordButton = new Button(container, SWT.RADIO);
-    fFeedByKeywordButton.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    fFeedByKeywordButton.setText(Messages.FeedDefinitionPage_CREATE_KEYWORD_FEED);
-    fFeedByKeywordButton.addSelectionListener(new SelectionAdapter() {
+    /* 2) Google News Keyword */
+    TabItem googleNewsTab = new TabItem(fTabFolder, SWT.NONE);
+    googleNewsTab.setText(Messages.FeedDefinitionPage_TAB_GOOGLE_NEWS);
+
+    Composite googleNewsContainer = new Composite(fTabFolder, SWT.NONE);
+    googleNewsContainer.setLayout(new GridLayout(1, false));
+    googleNewsTab.setControl(googleNewsContainer);
+
+    Label gnewsLabel = new Label(googleNewsContainer, SWT.NONE);
+    gnewsLabel.setText(Messages.FeedDefinitionPage_GOOGLE_NEWS_KEYWORD);
+
+    fGoogleNewsKeywordInput = new Text(googleNewsContainer, SWT.BORDER);
+    fGoogleNewsKeywordInput.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
+    ((GridData) fGoogleNewsKeywordInput.getLayoutData()).widthHint = entryFieldWidth;
+
+    Label previewLabel = new Label(googleNewsContainer, SWT.NONE);
+    previewLabel.setText(Messages.FeedDefinitionPage_GOOGLE_NEWS_URL_PREVIEW);
+
+    fGoogleNewsUrlPreview = new Text(googleNewsContainer, SWT.BORDER | SWT.READ_ONLY);
+    fGoogleNewsUrlPreview.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
+
+    fGoogleNewsKeywordInput.addModifyListener(new ModifyListener() {
       @Override
-      public void widgetSelected(SelectionEvent e) {
-        fKeywordInput.setEnabled(fFeedByKeywordButton.getSelection());
-
-        if (fKeywordInput.isEnabled())
-          hookKeywordAutocomplete();
-
-        fKeywordInput.setFocus();
+      public void modifyText(ModifyEvent e) {
+        onGoogleNewsChange();
         getContainer().updateButtons();
       }
     });
 
-    textIndent = new Composite(container, SWT.NONE);
-    textIndent.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    textIndent.setLayout(new GridLayout(1, false));
-    ((GridLayout) textIndent.getLayout()).marginLeft = 10;
+    /* 3) Other Keywords */
+    TabItem keywordTab = new TabItem(fTabFolder, SWT.NONE);
+    keywordTab.setText(Messages.FeedDefinitionPage_TAB_KEYWORD);
 
-    fKeywordInput = new Text(textIndent, SWT.BORDER);
-    OwlUI.makeAccessible(fKeywordInput, fFeedByKeywordButton);
+    Composite keywordContainer = new Composite(fTabFolder, SWT.NONE);
+    keywordContainer.setLayout(new GridLayout(1, false));
+    keywordTab.setControl(keywordContainer);
+
+    Label keywordLabel = new Label(keywordContainer, SWT.NONE);
+    keywordLabel.setText(Messages.FeedDefinitionPage_CREATE_KEYWORD_FEED);
+
+    fKeywordInput = new Text(keywordContainer, SWT.BORDER);
     fKeywordInput.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
-    fKeywordInput.setEnabled(false);
+    ((GridData) fKeywordInput.getLayoutData()).widthHint = entryFieldWidth;
     fKeywordInput.addModifyListener(new ModifyListener() {
       @Override
       public void modifyText(ModifyEvent e) {
@@ -269,8 +315,29 @@ public class FeedDefinitionPage extends WizardPage {
       }
     });
 
+    /* Tab selection */
+    fTabFolder.addSelectionListener(new SelectionAdapter() {
+      @Override
+      public void widgetSelected(SelectionEvent e) {
+        int idx = fTabFolder.getSelectionIndex();
+        if (idx == 0) {
+          fFeedLinkInput.setFocus();
+          onLinkChange();
+        } else if (idx == 1) {
+          fGoogleNewsKeywordInput.setFocus();
+          hookGoogleNewsAutocomplete();
+          onGoogleNewsChange();
+        } else if (idx == 2) {
+          fKeywordInput.setFocus();
+          hookKeywordAutocomplete();
+          setMessage(Messages.FeedDefinitionPage_CREATE_BOOKMARK);
+        }
+        getContainer().updateButtons();
+      }
+    });
+
     /* Info Container */
-    Composite infoContainer = new Composite(container, SWT.None);
+    Composite infoContainer = new Composite(container, SWT.NONE);
     infoContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
     infoContainer.setLayout(LayoutUtils.createGridLayout(2, 0, 5));
 
@@ -291,6 +358,23 @@ public class FeedDefinitionPage extends WizardPage {
     Dialog.applyDialogFont(container);
 
     setControl(container);
+    fFeedLinkInput.setFocus();
+  }
+
+  private void onGoogleNewsChange() {
+    String keyword = fGoogleNewsKeywordInput.getText();
+    String generatedUrl = URIUtils.makeGoogleNewsRssUrl(keyword);
+    fGoogleNewsUrlPreview.setText(generatedUrl);
+
+    if (StringUtils.isSet(generatedUrl)) {
+      IBookMark existingBookMark = fExistingFeeds.get(generatedUrl);
+      if (existingBookMark != null)
+        setMessage(NLS.bind(Messages.FeedDefinitionPage_BOOKMARK_EXISTS, existingBookMark.getName()), WARNING);
+      else
+        setMessage(Messages.FeedDefinitionPage_CREATE_BOOKMARK);
+    } else {
+      setMessage(Messages.FeedDefinitionPage_CREATE_BOOKMARK);
+    }
   }
 
   private void onLinkChange() {
@@ -300,6 +384,38 @@ public class FeedDefinitionPage extends WizardPage {
       setMessage(NLS.bind(Messages.FeedDefinitionPage_BOOKMARK_EXISTS, existingBookMark.getName()), WARNING);
     else
       setMessage(Messages.FeedDefinitionPage_CREATE_BOOKMARK);
+  }
+
+  private void hookGoogleNewsAutocomplete() {
+    if (fIsAutoCompleteGoogleNewsHooked)
+      return;
+    fIsAutoCompleteGoogleNewsHooked = true;
+
+    final Pair<SimpleContentProposalProvider, ContentProposalAdapter> autoComplete = OwlUI.hookAutoComplete(fGoogleNewsKeywordInput, null, true, false);
+
+    JobRunner.runInBackgroundThread(new Runnable() {
+      @Override
+      public void run() {
+        if (!fGoogleNewsKeywordInput.isDisposed()) {
+          Set<String> values = new TreeSet<String>(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+              return o1.compareToIgnoreCase(o2);
+            }
+          });
+
+          values.addAll(OwlDAO.getDAO(ICategoryDAO.class).loadAllNames());
+
+          Collection<ILabel> labels = OwlDAO.getDAO(ILabelDAO.class).loadAll();
+          for (ILabel label : labels) {
+            values.add(label.getName());
+          }
+
+          if (!fGoogleNewsKeywordInput.isDisposed())
+            OwlUI.applyAutoCompleteProposals(values, autoComplete.getFirst(), autoComplete.getSecond(), false);
+        }
+      }
+    });
   }
 
   private void hookKeywordAutocomplete() {

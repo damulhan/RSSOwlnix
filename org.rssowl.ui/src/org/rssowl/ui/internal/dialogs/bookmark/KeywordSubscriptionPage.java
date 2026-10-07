@@ -85,6 +85,9 @@ public class KeywordSubscriptionPage extends WizardPage {
     }
 
     String getLabel(String keywords) {
+      if ("org.rssowl.ui.GoogleNewsKeywordFeed".equals(fId)) { //$NON-NLS-1$
+        return NLS.bind(Messages.FeedDefinitionPage_GOOGLE_NEWS_TITLE_PATTERN, keywords != null ? keywords.trim() : ""); //$NON-NLS-1$
+      }
       return NLS.bind(Messages.KeywordSubscriptionPage_N_ON_M, StringUtils.replaceAll(fName, "&", ""), keywords); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
@@ -93,7 +96,9 @@ public class KeywordSubscriptionPage extends WizardPage {
     }
 
     String toUrl(String keywords) {
-      keywords = URIUtils.urlEncode(keywords);
+      if (keywords != null)
+        keywords = keywords.trim();
+      keywords = URIUtils.urlEncode(keywords).replaceAll("\\+", "%20"); //$NON-NLS-1$ //$NON-NLS-2$
       return StringUtils.replaceAll(fUrl, URL_INPUT_TOKEN, keywords);
     }
   }
